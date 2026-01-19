@@ -1,21 +1,27 @@
-from fastapi import FastAPI
-import undetected_chromedriver as uc
+from fastapi import FastAPI, HTTPException
+import requests
+from bs4 import BeautifulSoup
 
 app = FastAPI()
 
 @app.get("/")
-def home():
-    return {"message": "Use /title?url=YOUR_URL to get the page title"}
+def root():
+    return {"status": "ok"}
 
 @app.get("/title")
 def get_title(url: str):
-    options = uc.ChromeOptions()
-    options.headless = True
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    try:
+        r = requests.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0"
+        })
+        r.raise_for_status()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to fetch URL")
 
-    driver = uc.Chrome(options=options)
-    driver.get(url)
-    title = driver.title
-    driver.quit()
-    return {"url": url, "title": title}
+    soup = BeautifulSoup(r.text, "html.parser")
+    title = soup.title.string.strip() if soup.title else None
+
+    return {
+        "url": url,
+        "title": title
+    }
