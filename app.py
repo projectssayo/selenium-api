@@ -10,10 +10,15 @@ def root():
 
 @app.get("/title")
 def get_title(url: str):
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
     try:
-        r = requests.get(url, timeout=10, headers={
-            "User-Agent": "Mozilla/5.0"
-        })
+        r = requests.get(
+            url,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
         r.raise_for_status()
     except Exception:
         raise HTTPException(status_code=400, detail="Failed to fetch URL")
